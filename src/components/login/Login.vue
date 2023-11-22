@@ -1,6 +1,6 @@
 <template>
   <div class="login-form">
-    <form @submit.prevent="login" novalidate>
+    <form @submit.prevent="googleSignInWithEmailPassword" novalidate>
       <v-text-field
         class="field"
         v-model="state.email"
@@ -9,7 +9,7 @@
         required
         @input="v$.email.$touch"
         @blur="v$.email.$touch"
-      ></v-text-field> 
+      ></v-text-field>
 
       <v-text-field
         class="field"
@@ -19,10 +19,10 @@
         required
         @input="v$.password.$touch"
         @blur="v$.password.$touch"
-      ></v-text-field> 
+      ></v-text-field>
 
 
-      <v-container style="margin-top: 30px;"> 
+      <v-container style="margin-top: 30px;">
         <v-row justify="space-around">
           <v-btn type="submit" height="45" width="130" :disabled="isLoading">
             <template v-if="isLoading">
@@ -32,8 +32,13 @@
               Entrar
             </template>
           </v-btn>
-          <v-btn height="45">
-            <img src="../../assets/google.svg" width="25" typeof="svg"> Entrar com o Google
+          <v-btn height="45" @click="googleSignInWithPopup">
+            <template v-if="isLoadingPopUp">
+              <v-progress-circular indeterminate color="grey"></v-progress-circular>
+            </template>
+            <template v-else>
+              <img src="../../assets/google.svg" width="25" typeof="svg"> Entrar com o Google
+            </template>
           </v-btn>
         </v-row>
       </v-container>
@@ -47,9 +52,13 @@
   import { email, required } from '@vuelidate/validators'
   import { useRouter } from 'vue-router';
   import Swal from 'sweetalert2';
+  import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+  import { auth } from "../../service/firebase";
+  import apiService from '@/service/api.service';
 
   const router = useRouter();
   const isLoading = ref(false);
+  const isLoadingPopUp = ref(false)
 
   const initialState = {
     email: '',
@@ -76,25 +85,119 @@
 
   const v$ = useVuelidate(rules, state);
 
-  const login = async () => {
-    isLoading.value = true;
-    const result = await v$.value.$validate();
-    if(result) {
+  const googleSignInWithPopup = () => {
+    isLoadingPopUp.value = true;
+    const provider = new GoogleAuthProvider();
 
-    } else {
+    signInWithPopup(auth, provider)
+    .then(async (result) => {
+      const ret = await login({ email: result.user.email, google_uid: result.user.uid })
+      if(ret) {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+          }
+        });
+        Toast.fire({
+          icon: "success",
+          title: "Login efetuado com sucesso!"
+        });
+        router.push({ path: '/'});
+      } else {
+        Swal.fire({
+          title: "Usuário/Senha Incorreto",
+          text: "Verifique as informações e tente novamente!",
+          icon: "warning",
+          confirmButtonColor: 'red'
+        }).then(() => isLoadingPopUp.value = false);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
       Swal.fire({
         title: "Usuário/Senha Incorreto",
         text: "Verifique as informações e tente novamente!",
         icon: "warning",
         confirmButtonColor: 'red'
+      }).then(() => isLoadingPopUp.value = false);
+    });
+  }
+
+  const googleSignInWithEmailPassword = () => {
+    isLoading.value = true;
+    signInWithEmailAndPassword(auth, state.email, state.password)
+    .then(async (result) => {
+
+      const ret = await login({ email: result.user.email, google_uid: result.user.uid })
+      if(ret) {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+          }
+        });
+        Toast.fire({
+          icon: "success",
+          title: "Login efetuado com sucesso!"
+        });
+        router.push({ path: '/'});
+      } else {
+        Swal.fire({
+          title: "Usuário/Senha Incorreto",
+          text: "Verifique as informações e tente novamente!",
+          icon: "warning",
+          confirmButtonColor: 'red'
+        }).then(() => isLoading.value = false);
+      }
+    })
+    .catch((error) => {
+      let errTitle = '';
+      let errMsg = '';
+      switch (error.code) {
+        case "auth/invalid-login-credentials":
+          errTitle = 'Conta não encontrada';
+          errMsg = 'Nenhuma conta encontrada com esse email!';
+          break;
+        default:
+          errTitle = 'Usuário/Senha Incorreto';
+          errMsg = 'Verifique as informações e tente novamente!';
+          break;
+      }
+
+      Swal.fire({
+        title: errTitle,
+        text: errMsg,
+        icon: "warning",
+        confirmButtonColor: 'red'
       }).then(() => isLoading.value = false);
-    }
+    })
+  }
+
+  const login = async (data: object) => {
+    return await apiService.login(data).then((response: any) => {
+      localStorage.setItem('access_token', response.access_token);
+      return true;
+    }).catch((err) => {
+      console.log(err);
+      return false;
+    });
   }
 </script>
 
 
 <style lang="scss">
-  .login-form { 
+  .login-form {
     width: 95%;
   }
 

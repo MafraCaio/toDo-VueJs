@@ -1,5 +1,3 @@
-import { promises } from "node:dns";
-
 const apiUrl = 'http://localhost:3000';
 
 const apiService = {

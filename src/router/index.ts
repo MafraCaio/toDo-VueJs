@@ -39,7 +39,6 @@ const router = createRouter({
 
 router.beforeEach(async (to, from) => {
   const token = localStorage.getItem('access_token');
-
   if (!token && to.name !== 'Auth') {
     // Redirecionar o usuário para a tela de autenticação
     return {name: 'Auth'}
