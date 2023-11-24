@@ -91,7 +91,7 @@
 
     signInWithPopup(auth, provider)
     .then(async (result) => {
-      const ret = await login({ email: result.user.email, google_uid: result.user.uid })
+      const ret = await login({ email: result.user.email, googleToken: await result.user.getIdToken() })
       if(ret) {
         const Toast = Swal.mixin({
           toast: true,
@@ -133,8 +133,7 @@
     isLoading.value = true;
     signInWithEmailAndPassword(auth, state.email, state.password)
     .then(async (result) => {
-
-      const ret = await login({ email: result.user.email, google_uid: result.user.uid })
+      const ret = await login({ email: result.user.email, googleToken: await result.user.getIdToken() })
       if(ret) {
         const Toast = Swal.mixin({
           toast: true,

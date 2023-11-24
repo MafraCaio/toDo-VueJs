@@ -123,7 +123,7 @@ const register = async () => {
     createUserWithEmailAndPassword(getAuth(), state.email, state.password)
     .then((result) => {
       apiService.register({ email: state.email, name: state.name + ' ' + state.surname, password: undefined, google_uid: result.user.uid }).then(async () => {
-        const ret = await login({ email: state.email, google_uid: result.user.uid })
+        const ret = await login({ email: state.email, googleToken: await result.user.getIdToken() })
 
         if(ret) {
           const Toast = Swal.mixin({
@@ -199,7 +199,7 @@ const googleRegister = () => {
   .then((result) => {
     apiService.register({ email: result.user.email, name: result.user.displayName, google_uid: result.user.uid })
     .then(async () => {
-      const ret = await login({ email: state.email, google_uid: result.user.uid });
+      const ret = await login({ email: state.email, googleToken: await result.user.getIdToken() });
 
       if(ret) {
         const Toast = Swal.mixin({
