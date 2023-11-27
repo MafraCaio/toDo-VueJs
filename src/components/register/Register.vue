@@ -56,10 +56,12 @@ import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
 import { GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, getAuth} from "firebase/auth";
 import { auth } from "../../service/firebase";
+import {useAppStore} from "../../store/app";
 
 const router = useRouter();
 const isLoading = ref(false);
 const isLoadingPopUp = ref(false);
+const globalStore = useAppStore();
 
 const initialState = {
   name: '',
@@ -184,6 +186,7 @@ const register = async () => {
 
 const login = async (data: object) => {
   return await apiService.login(data).then((response: any) => {
+    globalStore.saveUser(response);
     localStorage.setItem('access_token', response.access_token);
     return true;
   }).catch((err) => {
@@ -199,7 +202,7 @@ const googleRegister = () => {
   .then((result) => {
     apiService.register({ email: result.user.email, name: result.user.displayName, google_uid: result.user.uid })
     .then(async () => {
-      const ret = await login({ email: state.email, googleToken: await result.user.getIdToken() });
+      const ret = await login({ email: result.user.email, googleToken: await result.user.getIdToken() });
 
       if(ret) {
         const Toast = Swal.mixin({

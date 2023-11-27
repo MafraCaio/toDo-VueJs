@@ -55,10 +55,12 @@
   import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
   import { auth } from "../../service/firebase";
   import apiService from '@/service/api.service';
+  import {useAppStore} from '../../store/app'
 
   const router = useRouter();
   const isLoading = ref(false);
-  const isLoadingPopUp = ref(false)
+  const isLoadingPopUp = ref(false);
+  const globalStore = useAppStore();
 
   const initialState = {
     email: '',
@@ -185,6 +187,7 @@
 
   const login = async (data: object) => {
     return await apiService.login(data).then((response: any) => {
+      globalStore.saveUser(response);
       localStorage.setItem('access_token', response.access_token);
       return true;
     }).catch((err) => {

@@ -1,5 +1,7 @@
 // Composables
+import { useAppStore } from '@/store/app';
 import { createRouter, createWebHistory } from 'vue-router'
+
 
 const routes = [
   {
@@ -37,12 +39,17 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from) => {
-  const token = localStorage.getItem('access_token');
-  if (!token && to.name !== 'Auth') {
-    // Redirecionar o usuário para a tela de autenticação
-    return {name: 'Auth'}
+router.beforeEach(async (to, from, next) => {
+  const globalStore = useAppStore(); // Evite usar hooks diretamente aqui
+  const user = globalStore.user;
+
+  const screen = to.name || 'home';
+
+  if (screen.toUpperCase() !== 'AUTH' && user.id === 0) {
+    next({ name: 'Auth' }); // Redireciona para a rota de autenticação se o usuário não estiver autenticado e a rota atual não for 'Auth'
+  } else {
+    next(); // Continua a navegação normalmente
   }
-})
+});
 
 export default router
